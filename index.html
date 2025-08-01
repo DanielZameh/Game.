@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Mission Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e272e, #57606f);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #2776EA;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      direction: rtl;
+    }
+    .language-label {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    select {
+      padding: 12px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background: #fff;
+      color: #2f3542;
+      cursor: pointer;
+      width: 200px;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    select:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(100, 77, 255, 0.5);
+    }
+    button {
+      --😀: #644dff;
+      --😀😀: #4836bb;
+      --😀😀😀: #654dff63;
+      cursor: pointer;
+      width: 184px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      font-size: 1.125em;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #fff;
+      background: var(--😀);
+      border: 2px solid var(--😀😀);
+      border-radius: .75rem;
+      box-shadow: 0 8px 0 var(--😀😀);
+      transform: skew(-10deg);
+      transition: all .1s ease;
+      filter: drop-shadow(0 15px 20px var(--😀😀😀));
+      margin: 20px auto;
+      font-family: inherit;
+    }
+    button:active {
+      letter-spacing: 0px;
+      transform: skew(-10deg) translateY(8px);
+      box-shadow: 0 0 0 var(--😀😀😀);
+    }
+    button:hover {
+      filter: brightness(1.1);
+    }
+    .mission {
+      margin-top: 30px;
+      font-size: 1.8rem;
+      font-weight: 600;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      line-height: 1.5;
+    }
+    .arabic {
+      font-family: 'Noto Sans Arabic', sans-serif;
+      direction: rtl;
+    }
+    .english {
+      font-family: 'Inter', sans-serif;
+      direction: ltr;
+    }
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    @keyframes float {
+      0% { transform: translateY(0); opacity: 0.8; }
+      50% { transform: translateY(-20px); opacity: 0.4; }
+      100% { transform: translateY(0); opacity: 0.8; }
+    }
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: rgba(100, 77, 255, 0.5);
+      border-radius: 50%;
+      animation: float 4s infinite ease-in-out;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .mission {
+        font-size: 1.4rem;
+      }
+      select, button {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+  <div class="container">
+    <h1>😅انت و نصيبك</h1>
+    <div class="language-label" id="languageLabel">Pick your language:</div>
+    <select id="language" onchange="toggleLanguage()">
+      <option value="en">English</option>
+      <option value="ar">Arabic (العربية)</option>
+    </select>
+    <button onclick="randomizeMission()" id="randomizeButton">Randomize!</button>
+    <div class="mission english" id="missionDisplay">Ready to get your mission?</div>
+  </div>
+
+  <script>
+    const translations = {
+      en: {
+        languageLabel: "Pick your language:",
+        randomizeButton: "Randomize!",
+        missionDefault: "Ready to get your mission?"
+      },
+      ar: {
+        languageLabel: "اختر لغتك:",
+        randomizeButton: "اختر عشوائياً!",
+        missionDefault: "جاهز للحصول على مهمتك؟"
+      }
+    };
+
+    const missions = {
+      en: [
+        "Pretend to be a cat for 2 minutes.",
+        "Talk in a British accent for the next 5 turns.",
+        "Give someone a compliment with a serious face.",
+        "Sing your favorite cartoon theme song.",
+        "Do 10 jumping jacks and end with a superhero pose.",
+        "Speak only in questions for the next round.",
+        "Act like a robot until your next turn.",
+        "Tell a joke and don’t laugh.",
+        "Convince someone the floor is lava.",
+        "Say 'pickle' after everything you say until your next mission.",
+        "Mimic someone in the room for 1 minute.",
+        "Draw a moustache on your face with a pen.",
+        "Do your best evil villain laugh.",
+        "Recite the alphabet backward.",
+        "Balance a book on your head for 30 seconds.",
+        "Act like you're stuck in slow motion.",
+        "Dance without music for 30 seconds.",
+        "Pretend your hand is a phone and make a call.",
+        "Name 5 types of cheese in 10 seconds.",
+        "Walk like a crab across the room.",
+        "Try to lick your elbow.",
+        "Spell your name using your body.",
+        "Yell a random word dramatically.",
+        "Say something nice about every person here.",
+        "Make a scary face and hold it for 10 seconds.",
+        "Act like a grandparent telling a story.",
+        "Imitate your favorite animal.",
+        "Tell a silly lie with confidence.",
+        "Use your shoe as a telephone.",
+        "Invent a handshake with someone.",
+        "Do a runway walk.",
+        "Pretend you're invisible for 1 minute.",
+        "Do 5 squats while making a cow sound.",
+        "Say 'I'm a banana' three times seriously.",
+        "Describe your last dream dramatically.",
+        "Say the alphabet skipping every other letter.",
+        "Speak like a news reporter.",
+        "Act like you just won an Oscar.",
+        "Recite a tongue twister three times.",
+        "Draw something with your eyes closed.",
+        "Tell everyone your hidden talent.",
+        "Whisper everything you say for the next 2 rounds.",
+        "Walk like you're on the moon.",
+        "Pretend to cook a meal and describe it.",
+        "Make an animal sound and let people guess it.",
+        "Say 3 facts about yourself — 1 must be a lie.",
+        "Create a new word and define it.",
+        "Pretend your hands are stuck together.",
+        "Act like you're swimming in jelly.",
+        "Do a dramatic reading of a random sentence.",
+        "Spell 'banana' backward without writing it down.",
+        "Say your favorite food like it’s a secret code.",
+        "Pretend to be a pirate for 1 minute.",
+        "Sing a song but replace every word with 'meow'.",
+        "Act like you’re selling a random object in the room.",
+        "Say everything in rhyme for the next round.",
+        "Pretend to be a chef hosting a cooking show.",
+        "Make up a superhero and describe their powers.",
+        "Walk like you’re wearing giant clown shoes.",
+        "Talk like you’re underwater for 30 seconds.",
+        "Pretend to be a time traveler from the future.",
+        "Do a dramatic slow-motion fight scene.",
+        "Say 'bloop' after every sentence for 2 minutes.",
+        "Act like you’re a detective solving a mystery.",
+        "Pretend to be a puppy excited to see someone.",
+        "Make a face like you just ate a lemon.",
+        "Sing the alphabet song in a heavy metal style.",
+        "Pretend you’re a game show host for 1 minute.",
+        "Talk like you’re reading a bedtime story.",
+        "Act like you’re stuck in a windstorm.",
+        "Say 5 words that start with 'Z' in 10 seconds.",
+        "Pretend to be a ninja sneaking across the room.",
+        "Do a victory dance like you just scored a goal.",
+        "Talk like you’re a radio DJ for 1 minute.",
+        "Pretend you’re a statue for 30 seconds.",
+        "Make up a jingle for a random object.",
+        "Act like you’re in a silent movie.",
+        "Say your name like you’re announcing a wrestler.",
+        "Pretend to be a bird learning to fly.",
+        "Do 3 cartwheels or roll across the floor.",
+        "Talk like you’re a GPS giving directions.",
+        "Pretend you’re a wizard casting a spell.",
+        "Sing a song in reverse order.",
+        "Act like you’re a catwalk model with attitude.",
+        "Say 'oops' after every step you take.",
+        "Pretend you’re a scientist making a discovery.",
+        "Do a dance like you’re a broken robot.",
+        "Talk like you’re in a cheesy rom-com.",
+        "Pretend you’re a fish out of water.",
+        "Say 3 things you’d bring to a desert island.",
+        "Act like you’re a superhero flying through the sky.",
+        "Pretend to be a grumpy old turtle.",
+        "Make a sound effect for every move you make.",
+        "Talk like you’re hosting a talk show.",
+        "Pretend you’re a ghost haunting the room.",
+        "Do a dramatic hair flip every 10 seconds.",
+        "Act like you’re a penguin sliding on ice.",
+        "Say everything twice for the next round.",
+        "Pretend you’re a pop star at a concert.",
+        "Make up a story about a random object.",
+        "Act like you’re walking on hot coals.",
+        "Pretend you’re a spy on a secret mission.",
+        "Do a dance like you’re in a music video.",
+        "Talk like you’re a villain plotting a plan.",
+        "Pretend you’re a dog chasing its tail.",
+        "Say 5 fruits in a dramatic voice.",
+        "Act like you’re in a slow-motion race.",
+        "Pretend you’re a baker kneading dough.",
+        "Talk like you’re a pirate captain.",
+        "Do a silly walk across the room.",
+        "Pretend you’re a mime stuck in a box.",
+        "Say 'yawn' after every sentence.",
+        "Act like you’re a superhero with a cape.",
+        "Pretend you’re a frog hopping around.",
+        "Talk like you’re in a sci-fi movie.",
+        "Do a cheerleader routine for 30 seconds.",
+        "Pretend you’re a cowboy riding a horse.",
+        "Say everything like you’re out of breath.",
+        "Act like you’re a magician doing a trick.",
+        "Pretend you’re a squirrel hiding nuts.",
+        "Talk like you’re a motivational speaker.",
+        "Do a dance like you’re at a wedding.",
+        "Pretend you’re a cat stretching lazily.",
+        "Say 3 animals in a whisper.",
+        "Act like you’re a knight fighting a dragon.",
+        "Pretend you’re a bubble floating around.",
+        "Talk like you’re a game character.",
+        "Do a dramatic pose every 10 seconds.",
+        "Pretend you’re a chef tasting your dish.",
+        "Say everything like it’s a question?",
+        "Act like you’re a robot powering down.",
+        "Pretend you’re a bird building a nest.",
+        "Talk like you’re in a horror movie.",
+        "Do a dance like you’re a flamingo.",
+        "Pretend you’re a surfer riding a wave.",
+        "Say 5 colors in a funny voice.",
+        "Act like you’re a cat chasing a laser.",
+        "Pretend you’re a superhero saving the day.",
+        "Talk like you’re a stand-up comedian.",
+        "Do a slow-motion victory cheer.",
+        "Pretend you’re a dinosaur stomping around.",
+        "Say everything with a fake cough.",
+        "Act like you’re a spy dodging lasers.",
+        "Pretend you’re a fish swimming upstream.",
+        "Talk like you’re a cartoon villain.",
+        "Do a dance like you’re in a disco.",
+        "Pretend you’re a turtle pulling into your shell.",
+        "Say 3 vegetables in a robot voice.",
+        "Act like you’re a pirate digging for treasure.",
+        "Pretend you’re a balloon losing air.",
+        "Talk like you’re a sports commentator.",
+        "Do a dramatic fall and recovery.",
+        "Pretend you’re a cat grooming itself.",
+        "Say everything like you’re freezing.",
+        "Act like you’re a ninja throwing stars.",
+        "Pretend you’re a cloud floating by.",
+        "Talk like you’re in a soap opera.",
+        "Do a dance like you’re a peacock.",
+        "Pretend you’re a racecar driver.",
+        "Say 5 cities in a singing voice.",
+        "Act like you’re a dog digging a hole.",
+        "Pretend you’re a superhero posing for photos.",
+        "Talk like you’re a poet reciting.",
+        "Do a slow-motion dance move.",
+        "Pretend you’re a lion roaring proudly.",
+        "Say everything with a hiccup.",
+        "Act like you’re a spy decoding a message.",
+        "Pretend you’re a jellyfish floating.",
+        "Talk like you’re a game show contestant.",
+        "Do a dance like you’re a robot cowboy.",
+        "Pretend you’re a penguin waddling.",
+        "Say 3 desserts in a dramatic voice.",
+        "Act like you’re a pirate steering a ship.",
+        "Pretend you’re a kite flying high.",
+        "Talk like you’re a movie trailer voice.",
+        "Do a dramatic spin and pose.",
+        "Pretend you’re a cat pouncing on a toy.",
+        "Say everything like you’re sleepy.",
+        "Act like you’re a knight on a quest.",
+        "Pretend you’re a bubble popping.",
+        "Talk like you’re a time traveler.",
+        "Do a dance like you’re a ballerina.",
+        "Pretend you’re a shark circling prey.",
+        "Say 5 drinks in a pirate voice.",
+        "Act like you’re a dog wagging its tail.",
+        "Pretend you’re a superhero landing.",
+        "Talk like you’re a radio announcer.",
+        "Do a slow-motion high-five.",
+        "Pretend you’re a bear waking up.",
+        "Say everything with a sneeze.",
+        "Act like you’re a ninja hiding.",
+        "Pretend you’re a wave crashing.",
+        "Talk like you’re a detective.",
+        "Do a dance like you’re a pop star.",
+        "Pretend you’re a turtle racing.",
+        "Say 3 instruments in a whisper.",
+        "Act like you’re a pirate finding treasure.",
+        "Pretend you’re a firework exploding.",
+        "Talk like you’re a chef describing a dish.",
+        "Do a dramatic jump and land.",
+        "Pretend you’re a cat playing with yarn.",
+        "Say everything like you’re excited.",
+        "Act like you’re a knight slaying a beast.",
+        "Pretend you’re a snowflake falling.",
+        "Talk like you’re a superhero.",
+        "Do a dance like you’re a hip-hop star.",
+        "Pretend you’re a dolphin leaping.",
+        "Say 5 sports in a funny voice.",
+        "Act like you’re a dog catching a ball.",
+        "Pretend you’re a superhero team leader.",
+        "Talk like you’re a news anchor.",
+        "Do a slow-motion cartwheel.",
+        "Pretend you’re a bear fishing.",
+        "Say everything with a giggle.",
+        "Act like you’re a spy sneaking.",
+        "Pretend you’re a comet zooming.",
+        "Talk like you’re a cartoon hero.",
+        "Do a dance like you’re a salsa star.",
+        "Pretend you’re a penguin diving.",
+        "Say 3 flowers in a robot voice.",
+        "Act like you’re a pirate celebrating.",
+        "Pretend you’re a rocket launching.",
+        "Talk like you’re a game narrator.",
+        "Do a dramatic bow and exit.",
+        "Pretend you’re a cat napping.",
+        "Say everything like you’re nervous.",
+        "Act like you’re a knight guarding.",
+        "Pretend you’re a leaf blowing away.",
+        "Talk like you’re a movie star.",
+        "Do a dance like you’re a tap dancer.",
+        "Pretend you’re a whale singing.",
+        "Say 5 shapes in a dramatic voice.",
+        "Act like you’re a dog chasing a squirrel.",
+        "Pretend you’re a superhero training.",
+        "Talk like you’re a storyteller.",
+        "Do a slow-motion wave to the crowd.",
+        "Pretend you’re a bear hugging a tree.",
+        "Say everything with a whistle.",
+        "Act like you’re a spy escaping.",
+        "Pretend you’re a star twinkling.",
+        "Talk like you’re a game master.",
+        "Do a dance like you’re a breakdancer.",
+        "Pretend you’re a seal balancing a ball.",
+        "Say 3 planets in a singing voice.",
+        "Act like you’re a pirate dancing.",
+        "Pretend you’re a plane taking off.",
+        "Talk like you’re a chef on TV.",
+        "Do a dramatic hair toss.",
+        "Pretend you’re a cat sneaking.",
+        "Say everything like you’re confused.",
+        "Act like you’re a knight dueling.",
+        "Pretend you’re a raindrop falling.",
+        "Talk like you’re a comedian.",
+        "Do a dance like you’re a jazz star."
+      ],
+      ar: [
+        "اتكلم بصوت خافت لمدة دقيقتين.",
+        "قل نكتة بدون ما تضحك.",
+        "اعمل نفسك دكتور نفسي واسأل حد عن مشاكله.",
+        "قول كلمة 'بطيخ' بعد كل جملة.",
+        "قلد شخصية كرتونية.",
+        "امشي في الغرفة كأنك نجم سينما.",
+        "ارقص على موسيقى خيالية.",
+        "اعمل صوت قطة كل ما حد يكلمك.",
+        "قول جملة بس لازم تستخدم يدك في شرحها.",
+        "اتكلم وكأنك مذيع نشرة الأخبار.",
+        "قلد أحد أصدقاءك لمدة دقيقة.",
+        "خلي الكل يسأل سؤال عنك ويجاوب عليه.",
+        "ارسم نفسك وانت مغمض عينيك.",
+        "امشي كأنك على القمر.",
+        "استخدم شيء عشوائي كأنه ميكروفون.",
+        "احكي عن يومك وكأنه فيلم أكشن.",
+        "اعمل تعبير وجه يخض كل اللي حواليك.",
+        "قول اسم أكلة بس بصوت حزين.",
+        "قول نكتة كأنها سر خطير.",
+        "اعمل نفسك روبوت لمدة دقيقة.",
+        "قول ٣ حاجات عن نفسك وواحدة منهم كذب.",
+        "اختر شخص واعترف له باعتراف وهمي.",
+        "اختر أغنية واغنيها بصوت عالي.",
+        "اتكلم بالإنجليزي بس بلهجة عربية.",
+        "قول جملة فيها خمس كلمات بس كلها تبدأ بنفس الحرف.",
+        "تقلد قرصان لمدة دقيقة.",
+        "غني أغنية بس كل كلمة بدالها 'مياو'.",
+        "اعمل نفسك بتبيع حاجة عشوائية في الأوضة.",
+        "قول كل حاجة على شكل قافية في الدور الجاي.",
+        "تقلد شيف بيعمل برنامج طبخ.",
+        "اخترع بطل خارق ووصف قواه.",
+        "امشي كأنك لابس جزمة مهرج كبيرة.",
+        "اتكلم كأنك تحت المية لمدة ٣٠ ثانية.",
+        "اعمل نفسك مسافر عبر الزمن من المستقبل.",
+        "اعمل مشهد قتال بطيء درامي.",
+        "قول 'بلووب' بعد كل جملة لمدة دقيقتين.",
+        "تقلد محقق بيحل لغز.",
+        "اعمل نفسك جرو فرحان بشوفت حد.",
+        "اعمل وشك كأنك أكلت ليمونة.",
+        "غني أغنية الأبجدية بأسلوب ميتال.",
+        "تقلد مقدم برنامج مسابقات لمدة دقيقة.",
+        "اتكلم كأنك بتقرأ قصة قبل النوم.",
+        "اعمل نفسك في عاصفة هواء قوية.",
+        "قول ٥ كلمات تبدأ بحرف 'ز' في ١٠ ثواني.",
+        "تقلد نينجا بيتسلل عبر الأوضة.",
+        "اعمل رقصة نصر كأنك سجلت جول.",
+        "اتكلم كأنك دي جي راديو لمدة دقيقة.",
+        "تجمّد كأنك تمثال لمدة ٣٠ ثانية.",
+        "اخترع أغنية إعلان لحاجة عشوائية.",
+        "اعمل نفسك في فيلم صامت.",
+        "قول اسمك كأنك بتعرف بمصارع.",
+        "تقلد طير بيتعلم يطير.",
+        "اعمل ٣ شقلبات أو تدحرج ع الأرض.",
+        "اتكلم كأنك GPS بيدي تعليمات.",
+        "تقلد ساحر بيعمل تعويذة.",
+        "غني أغنية بالعكس.",
+        "امشي كأنك عارضة أزياء بغرور.",
+        "قول 'أووبس' بعد كل خطوة تمشيها.",
+        "تقلد عالم بيكتشف حاجة جديدة.",
+        "ارقص كأنك روبوت عطلان.",
+        "اتكلم كأنك في فيلم رومانسي رخيص.",
+        "تقلد سمكة برا المية.",
+        "قول ٣ حاجات هتاخدهم جزيرة صحراوية.",
+        "تقلد بطل خارق بيطير في السما.",
+        "اعمل نفسك سلحفاة عجوزة نكدية.",
+        "اعمل صوت مع كل حركة تعملها.",
+        "تقلد مقدم برنامج توك شو.",
+        "اعمل نفسك شبح بيخوف الأوضة.",
+        "اعمل حركة شعر درامية كل ١٠ ثواني.",
+        "تقلد بطريق بيزلق ع الجليد.",
+        "قول كل حاجة مرتين في الدور الجاي.",
+        "تقلد نجم بوب في حفلة.",
+        "اخترع قصة عن حاجة عشوائية.",
+        "امشي كأنك ع جمر ساخن.",
+        "تقلد جاسوس في مهمة سرية.",
+        "ارقص كأنك في فيديو كليب.",
+        "اتكلم كأنك شرير بيخطط خطة.",
+        "تقلد كلب بيجري ورا ذيله.",
+        "قول ٥ فواكه بصوت درامي.",
+        "تقلد سباق بطيء الحركة.",
+        "تقلد خباز بيعجن عجين.",
+        "اتكلم كأنك قبطان قرصان.",
+        "امشي بطريقة سخيفة عبر الأوضة.",
+        "تقلد مايم محبوس في صندوق.",
+        "قول 'تثاؤب' بعد كل جملة.",
+        "تقلد بطل خارق ببرداية.",
+        "تقلد ضفدع بيقفز في الأوضة.",
+        "اتكلم كأنك في فيلم خيال علمي.",
+        "اعمل حركات مشجعة لمدة ٣٠ ثانية.",
+        "تقلد راعي بقر بيركب حصان.",
+        "قول كل حاجة كأنك لسه بتجري.",
+        "تقلد ساحر بيعمل خدعة.",
+        "تقلد سنجاب بيخبي مكسرات.",
+        "اتكلم كأنك بتدي محاضرة تحفيزية.",
+        "ارقص كأنك في فرح.",
+        "تقلد قطة بتتمطى بنعاس.",
+        "قول ٣ حيوانات بهمس.",
+        "تقلد فارس بيقاتل تنين.",
+        "تقلد فقاعة بتطفو في الهوا.",
+        "اتكلم كأنك شخصية في لعبة فيديو.",
+        "اعمل بوز درامي كل ١٠ ثواني.",
+        "تقلد شيف بيدوق أكلته.",
+        "قول كل حاجة كأنها سؤال؟",
+        "تقلد روبوت بيطفي.",
+        "تقلد طير بيعمل عش.",
+        "اتكلم كأنك في فيلم رعب.",
+        "ارقص كأنك فلامنجو.",
+        "تقلد راكب أمواج ع الموجة.",
+        "قول ٥ ألوان بصوت مضحك.",
+        "تقلد قطة بتجري ورا ليزر.",
+        "تقلد بطل خارق بينقذ العالم.",
+        "اتكلم كأنك كوميديان ع المسرح.",
+        "اعمل هتاف نصر بطيء.",
+        "تقلد ديناصور بيدوس ع الأرض.",
+        "قول كل حاجة مع سعال مزيف.",
+        "تقلد جاسوس بيتفادى ليزر.",
+        "تقلد سمكة بتسبح ضد التيار.",
+        "اتكلم كأنك شرير كرتون.",
+        "ارقص كأنك في ديسكو.",
+        "تقلد سلحفاة بتخش في قوقعتها.",
+        "قول ٣ خضروات بصوت روبوت.",
+        "تقلد قرصان بيحفر كنز.",
+        "تقلد بالون بيطلع هواه.",
+        "اتكلم كأنك معلق رياضي.",
+        "اعمل سقوط درامي واتعافى.",
+        "تقلد قطة بتتنظف.",
+        "قول كل حاجة كأنك بردت.",
+        "تقلد نينجا بيرمي نجم.",
+        "تقلد سحابة بتطفو في السما.",
+        "اتكلم كأنك في مسلسل درامي.",
+        "ارقص كأنك طاووس.",
+        "تقلد سائق سيارة سباق.",
+        "قول ٥ مدن بصوت غنائي.",
+        "تقلد كلب بيحفر حفرة.",
+        "تقلد بطل خارق بيتصور.",
+        "اتكلم كأنك شاعر بيقرأ.",
+        "اعمل حركة رقص بطيئة.",
+        "تقلد أسد بيزأر بفخر.",
+        "قول كل حاجة مع زغطة.",
+        "تقلد جاسوس بيفك شفرة.",
+        "تقلد هلامية بتطفو.",
+        "اتكلم كأنك متسابق في برنامج.",
+        "ارقص كأنك راعي بقر روبوت.",
+        "تقلد بطريق بيترنح.",
+        "قول ٣ حلويات بصوت درامي.",
+        "تقلد قرصان بيحتفل.",
+        "تقلد صاروخ بيقلع.",
+        "اتكلم كأنك شيف في برنامج تلفزيون.",
+        "اعمل حركة شعر درامية.",
+        "تقلد قطة بتتسلل.",
+        "قول كل حاجة كأنك تايه.",
+        "تقلد فارس بيتبارز.",
+        "تقلد قطرة مطر بتقع.",
+        "اتكلم كأنك كوميديان شهير.",
+        "ارقص كأنك نجم جاز.",
+        "تقلد حوت بيغني.",
+        "قول ٥ أشكال بصوت درامي.",
+        "تقلد كلب بيجري ورا سنجاب.",
+        "تقلد بطل خارق بيتدرب.",
+        "اتكلم كأنك راوي قصص.",
+        "اعمل موجة بطيئة للجمهور.",
+        "تقلد دب بيعانق شجرة.",
+        "قول كل حاجة مع صفارة.",
+        "تقلد جاسوس بيهرب.",
+        "تقلد نجم بيلمع.",
+        "اتكلم كأنك مدير لعبة.",
+        "ارقص كأنك راقص بريك دانس.",
+        "تقلد فقمة بتوازن كورة.",
+        "قول ٣ كواكب بصوت غنائي.",
+        "تقلد قرصان بيرقص.",
+        "تقلد طيارة بتقلع.",
+        "اتكلم كأنك شيف بيوصف أكلة.",
+        "اعمل رمية شعر درامية.",
+        "تقلد قطة بتتسلل.",
+        "قول كل حاجة كأنك مش فاهم.",
+        "تقلد فارس بيحارب.",
+        "تقلد قطرة مية بتسقط.",
+        "اتكلم كأنك ممثل كوميدي."
+      ]
+    };
+
+    function toggleLanguage() {
+      const lang = document.getElementById('language').value;
+      const missionDisplay = document.getElementById('missionDisplay');
+      const languageLabel = document.getElementById('languageLabel');
+      const randomizeButton = document.getElementById('randomizeButton');
+
+      languageLabel.innerText = translations[lang].languageLabel;
+      randomizeButton.innerText = translations[lang].randomizeButton;
+      missionDisplay.innerText = translations[lang].missionDefault;
+
+      if (lang === 'ar') {
+        document.body.classList.add('arabic');
+        document.body.classList.remove('english');
+        missionDisplay.classList.add('arabic');
+        missionDisplay.classList.remove('english');
+      } else {
+        document.body.classList.add('english');
+        document.body.classList.remove('arabic');
+        missionDisplay.classList.add('english');
+        missionDisplay.classList.remove('arabic');
+      }
+    }
+
+    function randomizeMission() {
+      const lang = document.getElementById('language').value;
+      const missionList = missions[lang];
+      const randomIndex = Math.floor(Math.random() * missionList.length);
+      document.getElementById('missionDisplay').innerText = missionList[randomIndex];
+    }
+
+    // Particle effect
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.animationDelay = `${Math.random() * 4}s`;
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    window.onload = () => {
+      toggleLanguage();
+      createParticles();
+    };
+  </script>
+</body>
+</html>
